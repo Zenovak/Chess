@@ -1,6 +1,8 @@
 # Chess
 UNDER CONSTRUCTION.
 
+Using reference: https://www.chess.com/terms/chess-notation
+
 
 
 # Design patterns used:
