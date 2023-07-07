@@ -77,7 +77,7 @@ namespace Chess {
 
 
 
-        // ------------- Movement Calculations -----------Private Methods-----------
+// ------------- Movement Calculations -----------Private Methods-----------
 
 
 
@@ -90,7 +90,7 @@ namespace Chess {
                     moves[Index].Add(Index - 16);
 
                 // Attacks. If destination not same side and not on edge and destination not empty: 
-                if ((board[Index] & 8) != (board[Index - 9] & 8) && (Index % 8 != 0) && (board[Index - 9] != 0))
+                if ((board[Index] & 8) != (board[Index - 9]  & 8) && (Index % 8 !=0) && (board[Index - 9] != 0))
                     moves[Index].Add(Index - 9);
 
                 if ((board[Index] & 8) != (board[Index - 7] & 8) && (Index % 8 != 7) && (board[Index - 7] != 0))
@@ -125,12 +125,12 @@ namespace Chess {
 
             var displacements = new Vector2[8] {
                 new Vector2(-1, -2), new Vector2(1, -2),
-                new Vector2(2, -1),new Vector2(2, 1),
-                new Vector2(1, 2),new Vector2(-1, 2),
+                new Vector2(2, -1),new Vector2(2, 1), 
+                new Vector2(1, 2),new Vector2(-1, 2), 
                 new Vector2(-2, 1), new Vector2(-2, -1),
             };
 
-
+            
             foreach (var displacement in displacements) {
                 var potentialMove = pos + displacement;
                 Console.WriteLine(pos + "Move to " + potentialMove);
@@ -144,7 +144,7 @@ namespace Chess {
                 var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
 
                 // Check same sides.
-                if ((board[moveIndex] & 8) == (board[Index] & 8) && board[moveIndex] != 0)
+                if ((board[moveIndex] & 8) == (board[Index] & 8) && board[moveIndex] !=0)
                     continue;
 
                 moves[Index].Add(moveIndex);
@@ -166,7 +166,7 @@ namespace Chess {
             var increment = 1;
             foreach (var displacement in displacements) {
                 while (true) {
-                    var potentialMove = pos + displacement * increment;
+                    var potentialMove = pos + displacement * increment ;
                     var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
 
 
@@ -183,7 +183,7 @@ namespace Chess {
 
                     // Enemy.
                     if ((board[moveIndex] & 8) != (board[index] & 8) && board[moveIndex] != 0) {
-                        AddMoves(index, moveIndex);
+                        AddMoves(index, moveIndex); 
                         break;
                     }
 
@@ -196,18 +196,18 @@ namespace Chess {
 
 
 
-        //--------------- Private Methods ---------------------------------------
+//--------------- Private Methods ---------------------------------------
         private void AddMoves(int pieceIndex, int moveIndex) {
             if (moves[pieceIndex] == null)
                 moves[pieceIndex] = new List<int>();
-
+            
             moves[pieceIndex].Add(moveIndex);
         }
 
 
 
 
-        //-------------------------- Debug Methods---------------------------------------
+//-------------------------- Debug Methods---------------------------------------
 
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace Chess {
         }
 
         private void DebugPrintMoves() {
-            foreach (var kvp in moves) {
+            foreach(var kvp in moves) {
                 Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, string.Join(", ", kvp.Value));
             }
         }

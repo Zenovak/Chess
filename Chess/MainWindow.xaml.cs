@@ -20,6 +20,9 @@ namespace Chess {
     public partial class MainWindow : Window {
         public MainWindow() {
             InitializeComponent();
+
+            var chess = new ChessGame();
+            chess.PrintBoard();
         }
     }
 }
