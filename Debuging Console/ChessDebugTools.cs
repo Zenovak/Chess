@@ -40,6 +40,22 @@
             }
             return chessGame;
         }
+
+        private readonly static Dictionary<char, byte> Reference = new Dictionary<char, byte>() {
+            {'P', 1 },
+            {'N', 2 },
+            {'R', 5 },
+            {'B', 3 },
+            {'K', 6 },
+            {'Q', 7 },
+
+            {'p', 9 },
+            {'n', 10 },
+            {'r', 13 },
+            {'b', 11 },
+            {'k', 14 },
+            {'q', 15 },
+        };
     }
 
 }

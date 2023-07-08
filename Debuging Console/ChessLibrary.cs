@@ -53,29 +53,28 @@ namespace Chess {
 
                 // pawn (ID Checks)
                 if (currentPiece == 9 || currentPiece == 1) {
-                    moves.Add(i, new List<int>());
-                    Pawn(i, GameState.turn, GameState.board);
+                    AddMoves(i, Pawn(i, GameState.turn, GameState.board, false));
                 }
 
 
                 // knight (ID checks)
                 if (currentPiece == 2 || currentPiece == 10) {
-                    knight(i, GameState.board);
+                    AddMoves(i, knight(i, GameState.board));
                 }
 
                 // Long Diagonal Checks (Bitwise for Q and B)
                 if ((currentPiece & 3) == 3) {
-                    Diagonal(i, GameState.board, true);
+                    AddMoves(i, Diagonal(i, GameState.board, true));
                 }
 
                 // Long Cross Checks (Bitwise for Q and R)
                 if ((currentPiece & 5) == 5) {
-                    Cross(i, GameState.board, true);
+                    AddMoves(i, Cross(i, GameState.board, true));
                 }
 
                 // King 
                 if (currentPiece == 6 || currentPiece == 14)
-                    King(i, GameState.board);
+                    AddMoves(i, King(i, GameState.board));
             }
             Console.WriteLine("Checked all moves");
         }
@@ -88,6 +87,10 @@ namespace Chess {
                 if (currentPiece == 0) continue;
 
                 if (isEnemy(currentPiece, attacker)) continue;
+
+                if (currentPiece == 9 || currentPiece == 10) {
+
+                }
 
                 // knight (ID checks)
                 if (currentPiece == 2 || currentPiece == 10) {
@@ -118,7 +121,6 @@ namespace Chess {
 // ------------- Movement Calculations -----------Private Methods-----------
 
 
-
         private void Pawn(int Index, byte turn, byte[] board) {
 
             if (turn == 0) {
@@ -128,7 +130,7 @@ namespace Chess {
                     moves[Index].Add(Index - 16);
 
                 // Attacks. If destination not same side and not on edge and destination not empty: 
-                if ((board[Index] & 8) != (board[Index - 9]  & 8) && (Index % 8 !=0) && (board[Index - 9] != 0))
+                if ((board[Index] & 8) != (board[Index - 9] & 8) && (Index % 8 != 0) && (board[Index - 9] != 0))
                     moves[Index].Add(Index - 9);
 
                 if ((board[Index] & 8) != (board[Index - 7] & 8) && (Index % 8 != 7) && (board[Index - 7] != 0))
@@ -152,23 +154,113 @@ namespace Chess {
             8, 9, 10, 11, 12, 13, 14, 15, 48, 49, 50, 51, 52, 53, 54, 55
         };
 
+        private List<int> Pawn(int index, byte turn, byte[] board, bool attackMovesOnly) {
+            var row = index / 8;
+            var col = index % 8;
+
+            var pos = new Vector2(col, row);
+            var calculatedMoves = new List<int>();
+
+            var displacements = new Vector2[8] {
+                new Vector2(0, -1), new Vector2(0, -2),
+                new Vector2(1, -1), new Vector2(-1, -1),
+
+                new Vector2(0, 1), new Vector2(0, 2),
+                new Vector2(1, 1), new Vector2(-1, 1)
+            };
 
 
-        private void knight(int index, byte[] board) {
+            if (turn == 0) {
+
+                for (int i = 2; i < 4; i++) {
+                    var attackSquares = pos + displacements[i];
+                    var moveIndex = (int)(attackSquares.Y * 8 + attackSquares.X);
+
+                    if (!withinBounds(attackSquares)) continue;
+                    if (board[moveIndex] == 0) continue;
+
+                    calculatedMoves.Add(moveIndex);
+                    Console.WriteLine("Calculated attack moves for pawn");
+                }
+
+
+                if (attackMovesOnly) return calculatedMoves;
+
+
+                for (int i = 0; i < 2; i++) {
+                    var potentialMove = pos + displacements[i];
+                    var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
+
+                    // Check Edge bounds
+                    if (!withinBounds(potentialMove))
+                        continue;
+
+                    // Check for blocks.
+                    if (board[moveIndex] != 0)
+                        continue;
+
+                    if (!startingPawnPositions.Contains(index)) {
+                        calculatedMoves.Add(moveIndex);
+                        break;
+                    }
+                    calculatedMoves.Add(moveIndex);
+                }
+            }
+            else {
+
+                for (int i = 2; i < 4; i++) {
+                    var attackSquares = pos + displacements[i];
+                    var moveIndex = (int)(attackSquares.Y * 8 + attackSquares.X);
+
+                    if (!withinBounds(attackSquares)) continue;
+                    if (board[moveIndex] == 0) continue;
+
+                    calculatedMoves.Add(moveIndex);
+                }
+
+                if (attackMovesOnly) return calculatedMoves;
+
+                for (int i = 4; i < 6; i++) {
+                    var potentialMove = pos + displacements[i];
+                    var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
+
+                    // Check Edge bounds
+                    if (!withinBounds(potentialMove))
+                        continue;
+
+                    // Check for blocks.
+                    if (board[moveIndex] != 0)
+                        continue;
+
+                    if (!startingPawnPositions.Contains(index)) {
+                        calculatedMoves.Add(moveIndex);
+                        break;
+                    }
+                    calculatedMoves.Add(moveIndex);
+                }
+            }
+            return calculatedMoves;
+        }
+
+
+
+        private List<int> knight(int index, byte[] board) {
 
             var row = index / 8;
             var col = index % 8;
 
             var pos = new Vector2(col, row);
 
+            var calculatedMoves = new List<int>();
+
             var displacements = new Vector2[8] {
                 new Vector2(-1, -2), new Vector2(1, -2),
-                new Vector2(2, -1),new Vector2(2, 1), 
-                new Vector2(1, 2),new Vector2(-1, 2), 
+                new Vector2(2, -1),new Vector2(2, 1),
+                new Vector2(1, 2),new Vector2(-1, 2),
                 new Vector2(-2, 1), new Vector2(-2, -1),
             };
 
-            
+
             foreach (var displacement in displacements) {
                 var potentialMove = pos + displacement;
                 var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
@@ -182,35 +274,38 @@ namespace Chess {
                     if (!isEnemy(board[index], board[moveIndex]))
                         continue;
 
-                AddMoves(index, moveIndex);
+                calculatedMoves.Add(moveIndex);
             }
+            return calculatedMoves;
         }
 
 
-        private void Diagonal(int index, byte[] board, bool isAllAxis) {
+        private List<int> Diagonal(int index, byte[] board, bool isAllAxis) {
 
             var displacements = new Vector2[4] {
                 new Vector2(1, -1), new Vector2(1, 1),
                 new Vector2(-1, 1), new Vector2(-1, -1)
             };
 
-            calculateAxisMoves(index, displacements, board, isAllAxis);
+            return calculateAxisMoves(index, displacements, board, isAllAxis);
         }
 
 
-        private void Cross(int index, byte[] board, bool isAllAxis) {
-
+        private List<int> Cross(int index, byte[] board, bool isAllAxis) {
+            Console.WriteLine("Calculating for cross moves");
             var displacements = new Vector2[4] {
                 new Vector2(0, -1), new Vector2(1, 0),
                 new Vector2(0, 1), new Vector2(-1, 0)
             };
 
-            calculateAxisMoves(index, displacements, board, isAllAxis);
+            return calculateAxisMoves(index, displacements, board, isAllAxis);
         }
 
-        private void King(int index, byte[] board) {
-            Cross(index, board, false);
-            Diagonal(index, board, false);
+        private List<int> King(int index, byte[] board) {
+            var moves = Cross(index, board, false);
+            moves.Concat(Diagonal(index, board, false));
+
+            return moves;
         }
 
 
@@ -228,11 +323,13 @@ namespace Chess {
         /// <param name="board">The byteboard reference</param>
         /// <param name="isLong">Whether this piece movement walks the whole board</param>
 
-        private void calculateAxisMoves(int index, Vector2[] displacements, byte[] board, bool isLong) {
+        private List<int> calculateAxisMoves(int index, Vector2[] displacements, byte[] board, bool isLong) {
             var row = index / 8;
             var col = index % 8;
 
             var pos = new Vector2(col, row);
+
+            var moveIndexes = new List<int>();
 
             var increment = 1;
             foreach (var displacement in displacements) {
@@ -245,32 +342,44 @@ namespace Chess {
                         break;
 
                     // Check same sides or enemy.
-                    if (board[moveIndex] !=0) {
+                    if (board[moveIndex] != 0) {
                         if (!isEnemy(board[index], board[moveIndex]))
                             break;
                         else {
-                            AddMoves(index, moveIndex);
+                            moveIndexes.Add(moveIndex);
                             break;
                         }
                     }
 
-                    AddMoves(index, moveIndex);
-                    
-                    increment +=1;
+                    moveIndexes.Add(moveIndex);
+
+                    increment += 1;
                     if (!isLong) {
-                        break; 
+                        break;
                     }
                 }
                 increment = 1;
             }
+            return moveIndexes;
         }
 
-        
+
         private void AddMoves(int pieceIndex, int moveIndex) {
             if (!moves.ContainsKey(pieceIndex))
                 moves[pieceIndex] = new List<int>();
 
             moves[pieceIndex].Add(moveIndex);
+        }
+
+        private void AddMoves(int pieceIndex, List<int> moveIndexs) {
+            if (moveIndexs.Count < 1)
+                return;
+
+            if (!moves.ContainsKey(pieceIndex))
+                moves[pieceIndex] = moveIndexs;
+
+            else
+                moves[pieceIndex].Concat(moveIndexs);
         }
 
 
@@ -285,58 +394,6 @@ namespace Chess {
 
         private static bool isEnemy(byte selfPieceTypeID, byte targetPieceTypeID) {
             return (selfPieceTypeID & 8) != (targetPieceTypeID & 8) && targetPieceTypeID != 0;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//-------------------------- Debug Methods---------------------------------------
-
-
-        /// <summary>
-        /// Prints the board to the console. For debugging use
-        /// </summary>
-        public void PrintBoard() {
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    if (GameState.board[i * 8 + j] == 0)
-                        Console.Write(new string(" "));
-                    else {
-                        Console.Write(GameState.board[i * 8 + j]);
-                    }
-
-                    Console.Write(new string(", "));
-                }
-                Console.WriteLine();
-            }
-            Console.WriteLine("Now its " + GameState.turn + "'s turn");
-            Console.WriteLine("Castling Rights: " + GameState.castlingRights);
-            Console.WriteLine("Moves available: ");
-            DebugPrintMoves();
-        }
-
-        private void DebugPrintRow(byte[] row) {
-            Console.WriteLine();
-            foreach (var num in row) {
-                Console.Write(num.ToString() + ", ");
-            }
-            Console.WriteLine();
-        }
-
-        private void DebugPrintMoves() {
-            foreach(var kvp in moves) {
-                Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, string.Join(", ", kvp.Value));
-            }
         }
     }
 }
