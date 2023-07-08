@@ -1,4 +1,5 @@
 ﻿namespace Chess {
+    
     public class ChessGameState {
         // byte board of 64
         /// <summary>

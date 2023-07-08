@@ -6,7 +6,7 @@ namespace Debuging_Console {
             Console.WriteLine("Hello, World!");
             var chess = new ChessGame();
             chess.CalculateMoves();
-            chess.PrintBoard();
+            chess.DebugPrintBoard();
         }
     }
 }
