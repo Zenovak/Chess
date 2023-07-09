@@ -183,11 +183,14 @@ namespace Chess {
                 var moveIndex = (int)(Movesquares.Y * 8 + Movesquares.X);
                 var targetID = board[moveIndex];
 
+                // if attackMovesOnly, skip the first 2 calculations)
+                if (attackMovesOnly && i < 2) continue;
+
+                // Checks bounds and ally blocking
                 if (!withinBounds(Movesquares)) continue;
+                if (isAlly(selfID, targetID)) continue;
 
-                if (!isEnemy(selfID, targetID) && targetID != 0) continue;
-
-
+                // walk checks. Doesnt walk if target is not empty space
                 if (targetID == 0 && startingPawnPositions.Contains(index) && i == 1) calculatedMoves.Add(moveIndex);
                 if (targetID == 0 && i == 0) calculatedMoves.Add(moveIndex);
 
@@ -195,7 +198,6 @@ namespace Chess {
                     if ((targetID == 0 && attackMovesOnly) || isEnemy(selfID, targetID)) calculatedMoves.Add(moveIndex);
                     if (isEnemy(selfID, targetID)) calculatedMoves.Add(moveIndex);
                 }
-
             }
             return calculatedMoves;
         }
@@ -350,6 +352,16 @@ namespace Chess {
         /// <returns>false if targetPieceID is empty Space (0)</returns>
         private static bool isEnemy(byte selfPieceTypeID, byte targetPieceTypeID) {
             return ((selfPieceTypeID & 8) != (targetPieceTypeID & 8) && targetPieceTypeID != 0);
+        }
+
+        /// <summary>
+        /// Whether 2 pieces are the same side.
+        /// </summary>
+        /// <param name="selfPieceTypeID"></param>
+        /// <param name="targetPieceTypeID"></param>
+        /// <returns>false if targetPieceID is an empty space (ID 0)</returns>
+        private static bool isAlly(byte selfPieceTypeID, byte targetPieceTypeID) {
+            return ((selfPieceTypeID & 8) == (targetPieceTypeID & 8)) && (targetPieceTypeID != 0);
         }
 
 
