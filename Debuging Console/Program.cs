@@ -10,7 +10,7 @@ namespace Debuging_Console {
             var chess = new ChessGame();
             chess.CalculateMoves();
             chess.DebugPrintBoard();
-            chess.DebugPrintAttackSquares(0);
+            chess.DebugPrintAttackSquares(8);
             watch.Stop();
             Console.WriteLine("Executed In: " + watch.ElapsedMilliseconds);
         }

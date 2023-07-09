@@ -11,7 +11,7 @@
                     if (chessGame.GameState.board[i * 8 + j] == 0)
                         Console.Write(new string(" "));
                     else {
-                        Console.Write(chessGame.GameState.board[i * 8 + j]);
+                        Console.Write( IDreference[chessGame.GameState.board[i * 8 + j]]);
                     }
 
                     Console.Write(new string(", "));
@@ -57,6 +57,23 @@
             {'q', 15 },
         };
 
+        private readonly static Dictionary<byte, string> IDreference = new Dictionary<byte, string>() {
+            {1, "P" },
+            {2, "N"},
+            {5, "R"},
+            {3, "B"},
+            {6, "K"},
+            {7, "Q"},
+
+            {9, "p"},
+            {10, "n"},
+            {13, "r"},
+            {11, "b"},
+            {14, "k"},
+            {15, "q"},
+        };
+
+
 
         /// <summary>
         /// Prints the attacking Squares of the desired side.
@@ -65,7 +82,7 @@
         public static void DebugPrintAttackSquares(this ChessGame chess, byte attackerSide) {
             var results = chess.CalculateAttackSquares(chess.GameState.board, attackerSide);
 
-            Console.WriteLine(string.Join(", ", results));
+            Console.WriteLine("ID: " + attackerSide + "| attack squares: " + string.Join(", ", results));
         }
     }
 
