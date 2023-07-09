@@ -26,6 +26,23 @@
 
             return chessGame;
         }
+
+        public static void DebugPrintBoard(byte[] board) {
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if (board[i * 8 + j] == 0)
+                        Console.Write(new string(" "));
+                    else {
+                        Console.Write(IDreference[board[i * 8 + j]]);
+                    }
+
+                    Console.Write(new string(", "));
+                }
+                Console.WriteLine();
+            }
+        }
+
+
         private static void DebugPrintRow(byte[] row) {
             Console.WriteLine();
             foreach (var num in row) {

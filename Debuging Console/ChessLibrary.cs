@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ namespace Chess {
 
 
         // Moves
-        public Dictionary<int, List<int>> moves { get; }
+        public Dictionary<int, List<int>> moves {  get; private set; }
 
 
         public ChessGame() {
@@ -30,7 +31,7 @@ namespace Chess {
             GameState = ImportFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
             GameState = ImportFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1");
             GameState = ImportFEN("8/8/8/4p1K1/2k1P3/8/8/8 b - - 0 1");
-           // GameState = ImportFEN("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e3 0 1");
+            //GameState = ImportFEN("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e3 0 1");
         }
 
 
@@ -40,6 +41,10 @@ namespace Chess {
 
 
         public void CalculateMoves() {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            watch.Start();
+            Console.WriteLine("Begin calculations for moves: " + watch.ElapsedMilliseconds);
+
             for (int i = 0; i < 64; i++) {
                 var currentPiece = GameState.board[i];
 
@@ -77,20 +82,40 @@ namespace Chess {
                     AddMoves(i, King(i, GameState.board));
             }
             Console.WriteLine("Checked all moves");
+            Console.WriteLine("Executed: " +  watch.ElapsedMilliseconds);
+
+            Console.WriteLine("Evaluating legal moves");
+            EvaluateLegalMoves(GameState.board, GameState.turn);
+            Console.WriteLine("Executed: " + watch.ElapsedMilliseconds);
+            watch.Stop();
         }
 
-        private byte[] UpdateBoard(byte[] board, int pieceIndex, int locationIndex) {
-            byte[] bufferBoard = new byte[64];
-            board.CopyTo(bufferBoard, 0);
+        
 
 
+        public void EvaluateLegalMoves(byte[] board, byte turn) {
+            byte kingID = 6;
+            byte attackerSide = 8;
+            if (turn == 8) { kingID = 14; attackerSide = 0; }
 
+            foreach (var piece in moves.Keys) {
+                for (int i = 0; i < moves[piece].Count; i++) {
+                    var move = moves[piece][i];
+                    var possibleBoard = UpdateBoard(board, piece, move);
 
+                    var kingIndex = Array.IndexOf(possibleBoard, kingID);
 
-            return bufferBoard;
+                    var attacked = CalculateAttackSquares(possibleBoard, attackerSide);
+
+                    Console.WriteLine("attacked squares: " + string.Join(", ", attacked));
+
+                    if (attacked.Contains(kingIndex)) {
+                        Console.WriteLine("Removing not legal moves");
+                        moves[piece].Remove(move);
+                    }
+                }
+            }
         }
-
-
 
 
 
@@ -103,7 +128,6 @@ namespace Chess {
         /// <param name="attacker">The side you are calculating for. 0 = White, 8 = Black</param>
         /// <returns>List<int> index of attacking squares</int></returns>
         public List<int> CalculateAttackSquares(byte[] board, byte attacker) {
-
             var attackSquares = new List<int>();
 
             for (int i = 0; i < 64; i++) {
@@ -114,27 +138,27 @@ namespace Chess {
                 if ((currentPiece & 8) != (attacker & 8)) continue;
 
                 if (currentPiece == 9 || currentPiece == 1) {
-                    attackSquares.AddRange(Pawn(i, attacker, GameState.board, true));
+                    attackSquares.AddRange(Pawn(i, attacker, board, true));
                 }
 
                 // knight (ID checks)
                 if (currentPiece == 2 || currentPiece == 10) {
-                    attackSquares.AddRange(knight(i, GameState.board));
+                    attackSquares.AddRange(knight(i, board));
                 }
 
                 // Long Diagonal Checks (Bitwise for Q and B)
                 if ((currentPiece & 3) == 3) {
-                    attackSquares.AddRange(Diagonal(i, GameState.board, true));
+                    attackSquares.AddRange(Diagonal(i, board, true));
                 }
 
                 // Long Cross Checks (Bitwise for Q and R)
                 if ((currentPiece & 5) == 5) {
-                    attackSquares.AddRange(Cross(i, GameState.board, true));
+                    attackSquares.AddRange(Cross(i, board, true));
                 }
 
                 // King 
                 if (currentPiece == 6 || currentPiece == 14)
-                    attackSquares.AddRange(King(i, GameState.board));
+                    attackSquares.AddRange(King(i, board));
             }
             return attackSquares;
         }
@@ -148,7 +172,6 @@ namespace Chess {
         private static int[] startingPawnPositions = new int[16] {
             8, 9, 10, 11, 12, 13, 14, 15, 48, 49, 50, 51, 52, 53, 54, 55
         };
-
         private List<int> Pawn(int index, byte turn, byte[] board, bool attackMovesOnly) {
             var row = index / 8;
             var col = index % 8;
@@ -194,14 +217,13 @@ namespace Chess {
                 if (targetID == 0 && startingPawnPositions.Contains(index) && i == 1) calculatedMoves.Add(moveIndex);
                 if (targetID == 0 && i == 0) calculatedMoves.Add(moveIndex);
 
+                // attack checks. add moves to empty squares if attackMovesOnly is On.
                 if (i > 1) {
                     if ((targetID == 0 && attackMovesOnly) || isEnemy(selfID, targetID)) calculatedMoves.Add(moveIndex);
-                    if (isEnemy(selfID, targetID)) calculatedMoves.Add(moveIndex);
                 }
             }
             return calculatedMoves;
         }
-
 
 
         private List<int> knight(int index, byte[] board) {
@@ -231,7 +253,7 @@ namespace Chess {
 
                 // Check same sides.
                 if (board[moveIndex] != 0)
-                    if (!isEnemy(board[index], board[moveIndex]))
+                    if (isAlly(board[index], board[moveIndex]))
                         continue;
 
                 calculatedMoves.Add(moveIndex);
@@ -261,13 +283,12 @@ namespace Chess {
             return calculateAxisMoves(index, displacements, board, isAllAxis);
         }
 
+
         private List<int> King(int index, byte[] board) {
             var moves = Cross(index, board, false);
-            moves.Concat(Diagonal(index, board, false));
-
+            moves.AddRange(Diagonal(index, board, false));
             return moves;
         }
-
 
 
 
@@ -303,7 +324,7 @@ namespace Chess {
 
                     // Check same sides or enemy.
                     if (board[moveIndex] != 0) {
-                        if (!isEnemy(board[index], board[moveIndex]))
+                        if (isAlly(board[index], board[moveIndex]))
                             break;
                         else {
                             moveIndexes.Add(moveIndex);
@@ -327,11 +348,17 @@ namespace Chess {
             if (moveIndexs.Count < 1)
                 return;
 
+            /*if (moves.ContainsKey(pieceIndex))
+                moves[pieceIndex].AddRange(moveIndexs);
+            else
+                moves[pieceIndex] = moveIndexs;*/
+
             if (!moves.ContainsKey(pieceIndex))
                 moves[pieceIndex] = moveIndexs;
 
             else
                 moves[pieceIndex].AddRange(moveIndexs);
+
         }
 
 
@@ -364,6 +391,15 @@ namespace Chess {
             return ((selfPieceTypeID & 8) == (targetPieceTypeID & 8)) && (targetPieceTypeID != 0);
         }
 
+        private byte[] UpdateBoard(byte[] board, int pieceIndex, int locationIndex) {
+            byte[] bufferBoard = new byte[64];
+            board.CopyTo(bufferBoard, 0);
+
+            bufferBoard[locationIndex] = bufferBoard[pieceIndex];
+            bufferBoard[pieceIndex] = 0;
+            ChessDebugTools.DebugPrintBoard(bufferBoard);
+            return bufferBoard;
+        }
 
 
 
@@ -386,8 +422,7 @@ namespace Chess {
 
 
 
-
-// --------------------------------- Unused Methods, for last working reference ---------------------------------------------------------
+        // --------------------------------- Unused Methods, for last working reference ---------------------------------------------------------
 
         private void Pawn(int Index, byte turn, byte[] board) {
 
