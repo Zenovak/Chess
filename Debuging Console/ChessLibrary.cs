@@ -29,9 +29,9 @@ namespace Chess {
         public void StartingPlacement() {
 
             GameState = ImportFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-            GameState = ImportFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1");
+            GameState = ImportFEN("r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 b");
             GameState = ImportFEN("8/8/8/4p1K1/2k1P3/8/8/8 b - - 0 1");
-            //GameState = ImportFEN("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e3 0 1");
+            GameState = ImportFEN("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e3 0 1");
         }
 
 
@@ -84,36 +84,78 @@ namespace Chess {
             Console.WriteLine("Checked all moves");
             Console.WriteLine("Executed: " +  watch.ElapsedMilliseconds);
 
-            Console.WriteLine("Evaluating legal moves");
-            EvaluateLegalMoves(GameState.board, GameState.turn);
-            Console.WriteLine("Executed: " + watch.ElapsedMilliseconds);
+            Console.WriteLine("Evaluating legal moves evaluation");
+            _EvaluateLegalMoves(GameState.board, GameState.turn);
+            Console.WriteLine("Executed: " + watch.ElapsedMilliseconds + "ms");
             watch.Stop();
         }
 
+        public void MakeMove(byte pieceIndex, byte destinationIndex) {
+            GameState.board = UpdateBoard(GameState.board, pieceIndex, destinationIndex);
+
+            // revoke castling rights
+            if (GameState.castlingRights < 1) return;
+            switch (pieceIndex) {
+                case (0):
+                    GameState.castlingRights &= 1;
+                    break;
+                case (7):
+                    GameState.castlingRights &= 2;
+                    break;
+                case (4):
+                    GameState.castlingRights &= 1;
+                    GameState.castlingRights &= 2;
+                    break;
+                case (56):
+                    GameState.castlingRights &= 4;
+                    break;
+                case (63):
+                    GameState.castlingRights &= 8;
+                    break;
+                case (60):
+                    GameState.castlingRights &= 8;
+                    GameState.castlingRights &= 4;
+                    break;
+            }
+        }
         
 
-
-        public void EvaluateLegalMoves(byte[] board, byte turn) {
+        /// <summary>
+        /// Evaluates the Legal Moves by removing moves than puts current turn in check
+        /// </summary>
+        /// <param name="board">state of the current board</param>
+        /// <param name="turn"></param>
+        private void _EvaluateLegalMoves(byte[] board, byte turn) {
             byte kingID = 6;
             byte attackerSide = 8;
             if (turn == 8) { kingID = 14; attackerSide = 0; }
 
+            // keeps track of empty move dictionary
+            List<int> movesToDelete = new List<int>(); 
+
             foreach (var piece in moves.Keys) {
-                for (int i = 0; i < moves[piece].Count; i++) {
+                for (int i = moves[piece].Count - 1; i >=0 ; i--) {
+
                     var move = moves[piece][i];
                     var possibleBoard = UpdateBoard(board, piece, move);
 
                     var kingIndex = Array.IndexOf(possibleBoard, kingID);
-
-                    var attacked = CalculateAttackSquares(possibleBoard, attackerSide);
-
-                    Console.WriteLine("attacked squares: " + string.Join(", ", attacked));
+                    var attacked = CalculateAttackSquares(possibleBoard, attackerSide);                    
 
                     if (attacked.Contains(kingIndex)) {
-                        Console.WriteLine("Removing not legal moves");
-                        moves[piece].Remove(move);
+                        
+                        moves[piece].RemoveAt(i);
                     }
                 }
+
+                // clean up the dictionary
+                if (moves[piece].Count == 0) {
+                    movesToDelete.Add(piece);
+                }
+            }
+
+            foreach (var item in movesToDelete) {
+                moves.Remove(item);
             }
         }
 
@@ -397,7 +439,6 @@ namespace Chess {
 
             bufferBoard[locationIndex] = bufferBoard[pieceIndex];
             bufferBoard[pieceIndex] = 0;
-            ChessDebugTools.DebugPrintBoard(bufferBoard);
             return bufferBoard;
         }
 
