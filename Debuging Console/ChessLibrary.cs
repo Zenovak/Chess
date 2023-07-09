@@ -79,40 +79,64 @@ namespace Chess {
             Console.WriteLine("Checked all moves");
         }
 
+        private byte[] UpdateBoard(byte[] board, int pieceIndex, int locationIndex) {
+            byte[] bufferBoard = new byte[64];
+            board.CopyTo(bufferBoard, 0);
 
-        private void CalculateAttackSquares(byte[] board, byte attacker) {
+
+
+
+
+            return bufferBoard;
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Calculate all the attack squares for a side. 
+        /// </summary>
+        /// <param name="board">The game byteboard reference</param>
+        /// <param name="attacker">The side you are calculating for. 0 = White, 8 = Black</param>
+        /// <returns>List<int> index of attacking squares</int></returns>
+        public List<int> CalculateAttackSquares(byte[] board, byte attacker) {
+
+            var attackSquares = new List<int>();
+
             for (int i = 0; i < 64; i++) {
                 var currentPiece = board[i];
 
                 if (currentPiece == 0) continue;
 
-                if (isEnemy(currentPiece, attacker)) continue;
+                if ((currentPiece & 8) != (attacker & 8)) continue;
 
-                if (currentPiece == 9 || currentPiece == 10) {
-
+                if (currentPiece == 9 || currentPiece == 1) {
+                    attackSquares.AddRange(Pawn(i, attacker, GameState.board, true));
                 }
 
                 // knight (ID checks)
                 if (currentPiece == 2 || currentPiece == 10) {
-                    knight(i, GameState.board);
+                    attackSquares.AddRange(knight(i, GameState.board));
                 }
 
                 // Long Diagonal Checks (Bitwise for Q and B)
                 if ((currentPiece & 3) == 3) {
-                    Diagonal(i, GameState.board, true);
+                    attackSquares.AddRange(Diagonal(i, GameState.board, true));
                 }
 
                 // Long Cross Checks (Bitwise for Q and R)
                 if ((currentPiece & 5) == 5) {
-                    Cross(i, GameState.board, true);
+                    attackSquares.AddRange(Cross(i, GameState.board, true));
                 }
 
                 // King 
                 if (currentPiece == 6 || currentPiece == 14)
-                    King(i, GameState.board);
-
-
+                    attackSquares.AddRange(King(i, GameState.board));
             }
+            return attackSquares;
         }
 
 
@@ -120,35 +144,6 @@ namespace Chess {
 
 // ------------- Movement Calculations -----------Private Methods-----------
 
-
-        private void Pawn(int Index, byte turn, byte[] board) {
-
-            if (turn == 0) {
-                moves[Index].Add(Index - 8);
-
-                if (startingPawnPositions.Contains(Index))
-                    moves[Index].Add(Index - 16);
-
-                // Attacks. If destination not same side and not on edge and destination not empty: 
-                if ((board[Index] & 8) != (board[Index - 9] & 8) && (Index % 8 != 0) && (board[Index - 9] != 0))
-                    moves[Index].Add(Index - 9);
-
-                if ((board[Index] & 8) != (board[Index - 7] & 8) && (Index % 8 != 7) && (board[Index - 7] != 0))
-                    moves[Index].Add(Index - 7);
-            }
-            else {
-                moves[Index].Add(Index + 8);
-
-                if (startingPawnPositions.Contains(Index))
-                    moves[Index].Add(Index + 16);
-
-                if ((board[Index] & 8) != (board[Index + 9] & 8) && (Index % 8 != 0) && (board[Index + 9] != 0))
-                    moves[Index].Add(Index + 9);
-
-                if ((board[Index] & 8) != (board[Index + 7] & 8) && (Index % 8 != 7) && (board[Index + 7] != 0))
-                    moves[Index].Add(Index + 7);
-            }
-        }
 
         private static int[] startingPawnPositions = new int[16] {
             8, 9, 10, 11, 12, 13, 14, 15, 48, 49, 50, 51, 52, 53, 54, 55
@@ -161,83 +156,46 @@ namespace Chess {
             var pos = new Vector2(col, row);
             var calculatedMoves = new List<int>();
 
-            var displacements = new Vector2[8] {
-                new Vector2(0, -1), new Vector2(0, -2),
-                new Vector2(1, -1), new Vector2(-1, -1),
+            var displacements = new Vector2[4];
 
-                new Vector2(0, 1), new Vector2(0, 2),
-                new Vector2(1, 1), new Vector2(-1, 1)
-            };
-
+            var selfID = board[index];
 
             if (turn == 0) {
 
-                for (int i = 2; i < 4; i++) {
-                    var attackSquares = pos + displacements[i];
-                    var moveIndex = (int)(attackSquares.Y * 8 + attackSquares.X);
-
-                    if (!withinBounds(attackSquares)) continue;
-                    if (board[moveIndex] == 0) continue;
-
-                    calculatedMoves.Add(moveIndex);
-                    Console.WriteLine("Calculated attack moves for pawn");
-                }
-
-
-                if (attackMovesOnly) return calculatedMoves;
-
-
-                for (int i = 0; i < 2; i++) {
-                    var potentialMove = pos + displacements[i];
-                    var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
-
-                    // Check Edge bounds
-                    if (!withinBounds(potentialMove))
-                        continue;
-
-                    // Check for blocks.
-                    if (board[moveIndex] != 0)
-                        continue;
-
-                    if (!startingPawnPositions.Contains(index)) {
-                        calculatedMoves.Add(moveIndex);
-                        break;
-                    }
-                    calculatedMoves.Add(moveIndex);
+                displacements[0] = new Vector2(0, -1);
+                displacements[1] = new Vector2(0, -2);
+                if (attackMovesOnly) {
+                    displacements[2] = new Vector2(1, -1);
+                    displacements[3] = new Vector2(-1, -1);
                 }
             }
             else {
+                displacements[0] = new Vector2(0, 1);
+                displacements[1] = new Vector2(0, 2);
+                if (attackMovesOnly) {
+                    displacements[2] = new Vector2(1, 1);
+                    displacements[3] = new Vector2(-1, 1);
+                }
+            }
 
-                for (int i = 2; i < 4; i++) {
-                    var attackSquares = pos + displacements[i];
-                    var moveIndex = (int)(attackSquares.Y * 8 + attackSquares.X);
+            for (int i = 0; i < 4; i++) {
+                var Movesquares = pos + displacements[i];
+                var moveIndex = (int)(Movesquares.Y * 8 + Movesquares.X);
+                var targetID = board[moveIndex];
 
-                    if (!withinBounds(attackSquares)) continue;
-                    if (board[moveIndex] == 0) continue;
+                if (!withinBounds(Movesquares)) continue;
 
-                    calculatedMoves.Add(moveIndex);
+                if (!isEnemy(selfID, targetID) && targetID != 0) continue;
+
+
+                if (targetID == 0 && startingPawnPositions.Contains(index) && i == 1) calculatedMoves.Add(moveIndex);
+                if (targetID == 0 && i == 0) calculatedMoves.Add(moveIndex);
+
+                if (i > 1) {
+                    if ((targetID == 0 && attackMovesOnly) || isEnemy(selfID, targetID)) calculatedMoves.Add(moveIndex);
+                    if (isEnemy(selfID, targetID)) calculatedMoves.Add(moveIndex);
                 }
 
-                if (attackMovesOnly) return calculatedMoves;
-
-                for (int i = 4; i < 6; i++) {
-                    var potentialMove = pos + displacements[i];
-                    var moveIndex = (int)(potentialMove.Y * 8 + potentialMove.X);
-
-                    // Check Edge bounds
-                    if (!withinBounds(potentialMove))
-                        continue;
-
-                    // Check for blocks.
-                    if (board[moveIndex] != 0)
-                        continue;
-
-                    if (!startingPawnPositions.Contains(index)) {
-                        calculatedMoves.Add(moveIndex);
-                        break;
-                    }
-                    calculatedMoves.Add(moveIndex);
-                }
             }
             return calculatedMoves;
         }
@@ -292,7 +250,7 @@ namespace Chess {
 
 
         private List<int> Cross(int index, byte[] board, bool isAllAxis) {
-            Console.WriteLine("Calculating for cross moves");
+
             var displacements = new Vector2[4] {
                 new Vector2(0, -1), new Vector2(1, 0),
                 new Vector2(0, 1), new Vector2(-1, 0)
@@ -363,14 +321,6 @@ namespace Chess {
             return moveIndexes;
         }
 
-
-        private void AddMoves(int pieceIndex, int moveIndex) {
-            if (!moves.ContainsKey(pieceIndex))
-                moves[pieceIndex] = new List<int>();
-
-            moves[pieceIndex].Add(moveIndex);
-        }
-
         private void AddMoves(int pieceIndex, List<int> moveIndexs) {
             if (moveIndexs.Count < 1)
                 return;
@@ -379,7 +329,7 @@ namespace Chess {
                 moves[pieceIndex] = moveIndexs;
 
             else
-                moves[pieceIndex].Concat(moveIndexs);
+                moves[pieceIndex].AddRange(moveIndexs);
         }
 
 
@@ -391,9 +341,76 @@ namespace Chess {
             return true;
         }
 
-
+        /// <summary>
+        /// Whether the 2 pieces are opposing sides.
+        /// Note: PieceID means the ID of your Piece, Not an index on the board.
+        /// </summary>
+        /// <param name="selfPieceTypeID">Piece ID of current piece.</param>
+        /// <param name="targetPieceTypeID">Piece ID of the other piece to check</param>
+        /// <returns>false if targetPieceID is empty Space (0)</returns>
         private static bool isEnemy(byte selfPieceTypeID, byte targetPieceTypeID) {
-            return (selfPieceTypeID & 8) != (targetPieceTypeID & 8) && targetPieceTypeID != 0;
+            return ((selfPieceTypeID & 8) != (targetPieceTypeID & 8) && targetPieceTypeID != 0);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// --------------------------------- Unused Methods, for last working reference ---------------------------------------------------------
+
+        private void Pawn(int Index, byte turn, byte[] board) {
+
+            if (turn == 0) {
+                moves[Index].Add(Index - 8);
+
+                if (startingPawnPositions.Contains(Index))
+                    moves[Index].Add(Index - 16);
+
+                // Attacks. If destination not same side and not on edge and destination not empty: 
+                if ((board[Index] & 8) != (board[Index - 9] & 8) && (Index % 8 != 0) && (board[Index - 9] != 0))
+                    moves[Index].Add(Index - 9);
+
+                if ((board[Index] & 8) != (board[Index - 7] & 8) && (Index % 8 != 7) && (board[Index - 7] != 0))
+                    moves[Index].Add(Index - 7);
+            }
+            else {
+                moves[Index].Add(Index + 8);
+
+                if (startingPawnPositions.Contains(Index))
+                    moves[Index].Add(Index + 16);
+
+                if ((board[Index] & 8) != (board[Index + 9] & 8) && (Index % 8 != 0) && (board[Index + 9] != 0))
+                    moves[Index].Add(Index + 9);
+
+                if ((board[Index] & 8) != (board[Index + 7] & 8) && (Index % 8 != 7) && (board[Index + 7] != 0))
+                    moves[Index].Add(Index + 7);
+            }
+        }
+
+        private void AddMoves(int pieceIndex, int moveIndex) {
+            if (!moves.ContainsKey(pieceIndex))
+                moves[pieceIndex] = new List<int>();
+
+            moves[pieceIndex].Add(moveIndex);
         }
     }
 }

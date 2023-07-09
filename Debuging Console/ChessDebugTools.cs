@@ -56,6 +56,17 @@
             {'k', 14 },
             {'q', 15 },
         };
+
+
+        /// <summary>
+        /// Prints the attacking Squares of the desired side.
+        /// </summary>
+        /// <param name="attackerSide">0 = White, 8 = Black.</param>
+        public static void DebugPrintAttackSquares(this ChessGame chess, byte attackerSide) {
+            var results = chess.CalculateAttackSquares(chess.GameState.board, attackerSide);
+
+            Console.WriteLine(string.Join(", ", results));
+        }
     }
 
 }
